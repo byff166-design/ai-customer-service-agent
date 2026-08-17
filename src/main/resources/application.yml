@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: ai-customer-service-agent
+  profiles:
+    default: mock
+  datasource:
+    url: jdbc:h2:file:./data/customer-service;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+      continue-on-error: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  ai:
+    mode: mock
+    api-key: ${DASHSCOPE_API_KEY:}
+    base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    model-name: ${AI_MODEL_NAME:qwen-plus}
+    timeout-seconds: 45

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智服助手 · AI 客服与工单自动化</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<main class="layout">
+    <section class="intro">
+        <span class="eyebrow">JAVA × LANGCHAIN4J</span>
+        <h1>让客服回答<br>真正连接业务系统</h1>
+        <p>订单查询、物流跟踪、售后政策和工单流转，由 AI 选择工具，Java 服务执行真实业务。</p>
+        <div class="features">
+            <span>Function Calling</span>
+            <span>H2 + MyBatis-Plus</span>
+            <span>工具调用审计</span>
+        </div>
+        <div class="sample-box">
+            <strong>演示数据</strong>
+            <p>订单：ORD1001 / ORD1002 / ORD1003</p>
+        </div>
+    </section>
+
+    <section class="chat-card">
+        <header>
+            <div class="agent-icon">智</div>
+            <div>
+                <h2>智服助手</h2>
+                <p><span class="online"></span> 在线 · 当前运行模式由后端返回</p>
+            </div>
+            <a href="/swagger-ui.html" target="_blank">API 文档</a>
+        </header>
+
+        <div class="quick-actions" id="quickActions">
+            <button>查询 ORD1001 的物流</button>
+            <button>退款政策是什么？</button>
+            <button>为 ORD1002 创建售后工单，商品损坏</button>
+            <button>我要转人工客服</button>
+        </div>
+
+        <div class="messages" id="messages" aria-live="polite">
+            <article class="message agent">
+                <div class="bubble">您好！我可以帮助您查询订单、物流、售后政策和工单。请问需要什么帮助？</div>
+            </article>
+        </div>
+
+        <form id="chatForm">
+            <input id="messageInput" maxlength="1000" autocomplete="off" placeholder="输入问题，例如：查询 ORD1001 的物流" required>
+            <button type="submit" id="sendButton">发送</button>
+        </form>
+        <p class="disclaimer">演示系统使用模拟订单数据，请勿输入真实个人信息。</p>
+    </section>
+</main>
+<script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+{
+  "info": {
+    "name": "AI Customer Service Agent",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:8080"},
+    {"key": "ticketNo", "value": "replace-after-create-ticket"}
+  ],
+  "item": [
+    {
+      "name": "Chat - Logistics",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"sessionId\": \"postman-001\",\n  \"message\": \"查询 ORD1001 的物流\"\n}"},
+        "url": "{{baseUrl}}/api/v1/chat"
+      }
+    },
+    {
+      "name": "Chat - Create Ticket",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"sessionId\": \"postman-002\",\n  \"message\": \"为 ORD1002 创建售后工单，商品损坏\"\n}"},
+        "url": "{{baseUrl}}/api/v1/chat"
+      }
+    },
+    {
+      "name": "Get Order",
+      "request": {"method": "GET", "url": "{{baseUrl}}/api/v1/orders/ORD1001"}
+    },
+    {
+      "name": "Get Ticket",
+      "request": {"method": "GET", "url": "{{baseUrl}}/api/v1/tickets/{{ticketNo}}"}
+    },
+    {
+      "name": "List Tool Calls",
+      "request": {"method": "GET", "url": "{{baseUrl}}/api/v1/tool-calls"}
+    },
+    {
+      "name": "Health",
+      "request": {"method": "GET", "url": "{{baseUrl}}/actuator/health"}
+    }
+  ]
+}
