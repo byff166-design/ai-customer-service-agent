@@ -95,6 +95,7 @@ public class CustomerServiceTools {
             logService.record(context.sessionId(), toolName, request, result, true);
             return result;
         } catch (RuntimeException exception) {
+            context.markFailed();
             String result = "工具执行失败：" + exception.getMessage();
             logService.record(context.sessionId(), toolName, request, result, false);
             return result;

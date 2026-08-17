@@ -2,6 +2,7 @@ package com.chenxuekun.aicustomer.service;
 
 import com.chenxuekun.aicustomer.agent.CustomerServiceAgent;
 import com.chenxuekun.aicustomer.agent.ToolInvocationContext;
+import com.chenxuekun.aicustomer.agent.tool.CustomerServiceTools;
 import com.chenxuekun.aicustomer.dto.ChatRequest;
 import com.chenxuekun.aicustomer.dto.ChatResponse;
 import org.springframework.stereotype.Service;
@@ -14,19 +15,26 @@ public class ChatService {
     private final CustomerServiceAgent agent;
     private final ToolInvocationContext context;
     private final ToolCallLogService logService;
+    private final CustomerServiceTools tools;
 
     public ChatService(CustomerServiceAgent agent,
                        ToolInvocationContext context,
-                       ToolCallLogService logService) {
+                       ToolCallLogService logService,
+                       CustomerServiceTools tools) {
         this.agent = agent;
         this.context = context;
         this.logService = logService;
+        this.tools = tools;
     }
 
     public ChatResponse chat(ChatRequest request) {
         context.begin(request.sessionId());
         try {
             String answer = agent.chat(request.sessionId(), request.message());
+            if (context.hasFailure() && !context.toolNames().contains("transferToHuman")) {
+                String fallback = tools.transferToHuman("业务工具执行失败，系统自动兜底");
+                answer = answer + System.lineSeparator() + fallback;
+            }
             List<String> calls = context.toolNames();
             return new ChatResponse(
                     request.sessionId(),

@@ -8,9 +8,11 @@ import java.util.List;
 @Component
 public class ToolInvocationContext {
     private final ThreadLocal<State> state = new ThreadLocal<>();
+    private final ThreadLocal<Boolean> failed = new ThreadLocal<>();
 
     public void begin(String sessionId) {
         state.set(new State(sessionId, new ArrayList<>()));
+        failed.set(false);
     }
 
     public void record(String toolName) {
@@ -30,8 +32,17 @@ public class ToolInvocationContext {
         return current == null ? List.of() : List.copyOf(current.toolNames());
     }
 
+    public void markFailed() {
+        failed.set(true);
+    }
+
+    public boolean hasFailure() {
+        return Boolean.TRUE.equals(failed.get());
+    }
+
     public void clear() {
         state.remove();
+        failed.remove();
     }
 
     private record State(String sessionId, List<String> toolNames) {
