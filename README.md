@@ -41,9 +41,9 @@ flowchart LR
 
 | 分类 | 技术 |
 |---|---|
-| 后端 | Java 17、Spring Boot 3.5.5、Bean Validation |
+| 后端 | Java 17、Spring Boot 3.5.16、Bean Validation |
 | AI | LangChain4j 1.18.1、AI Services、Function Calling |
-| 数据 | MyBatis-Plus 3.5.12、H2 2.x |
+| 数据 | MyBatis-Plus 3.5.17、H2 2.x |
 | 接口 | RESTful API、Springdoc OpenAPI |
 | 测试 | JUnit 5、Mockito、MockMvc、Spring Boot Test |
 | 工程 | Maven Wrapper、GitHub Actions |
