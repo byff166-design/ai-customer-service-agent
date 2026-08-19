@@ -23,12 +23,13 @@
 ```text
 ChatController
   -> TraceFilter.begin(traceId) + MDC
-  -> ChatService.begin(sessionId, mode)
+  -> ChatService.resolve(customerId, sessionId)
+  -> Auth / RateLimit / InputGuard
   -> CustomerServiceAgent.chat()
   -> CustomerServiceTools
   -> Order/Logistics/FAQ/Ticket Service
   -> MyBatis-Plus + H2
-  -> ToolCallLog(traceId, costMs, success)
+  -> ToolCallLog(customerId, traceId, costMs, success)
   -> ChatResponse
 ```
 
@@ -44,13 +45,20 @@ ChatController
 ## 5. 会话记忆
 
 AI 模式使用 `SummarizingChatMemory`：短期消息保留在窗口中，达到阈值后调用模型压缩旧消息，
-摘要写入 H2 的 `conversation_summary`。每轮对话还会汇总同一 `sessionId` 的近期工具记录，作为
+摘要由独立线程池生成后写入 H2 的 `conversation_memory`。每轮对话还会汇总同一 `customerId` 的近期工具记录，作为
 受限的系统上下文注入。mock 模式不调用模型摘要。
 
-这里刻意称为“session 行为画像”，因为当前 API 没有认证后的 `customerId`，不能把浏览器会话
-冒充真实用户身份。生产化时应增加认证与客户主键，再建立跨设备长期画像。
+当前 API Key 鉴权只提供单机客户边界，不能冒充完整的登录、权限和跨设备身份体系。
 
-## 6. 失败策略
+## 6. P1 安全与异步记忆
+
+- 记忆表对 `customerId + sessionId` 建立唯一约束，防止不同客户复用相同会话号时串数据。
+- 长对话摘要由独立线程池异步执行，请求线程只保留最近消息并立即返回。
+- AI 模式可开启 `X-Api-Key` 鉴权；限流以 `customerId` 为键使用单机固定窗口。
+- 输入防护拦截非法 ID 和常见提示词注入，拦截后不调用模型。
+- 该方案定位为单机演示；多实例必须替换为统一身份服务和 Redis/Gateway 共享限流。
+
+## 7. 失败策略
 
 | 场景 | 策略 |
 |---|---|
@@ -61,7 +69,7 @@ AI 模式使用 `SummarizingChatMemory`：短期消息保留在窗口中，达�
 | 模型/API 异常 | ChatService 降级为转人工响应 |
 | 无关问题 | 拒绝回答并收敛到客服范围 |
 
-## 7. 后续可扩展方向
+## 8. 后续可扩展方向
 
 1. PostgreSQL 替换 H2，并通过 Flyway 管理数据库版本。
 2. Redis 存储分布式会话记忆和限流计数。

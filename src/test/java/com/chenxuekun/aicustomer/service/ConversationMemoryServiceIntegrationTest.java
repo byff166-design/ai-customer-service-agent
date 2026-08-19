@@ -42,4 +42,15 @@ class ConversationMemoryServiceIntegrationTest {
 
         assertThat(memoryService.find("MEMORY-2")).isEmpty();
     }
+
+    @Test
+    void shouldIsolateSameSessionAcrossCustomers() {
+        memoryService.save("CUSTOMER-A", "SHARED-SESSION", "A 客户摘要", 3);
+        memoryService.save("CUSTOMER-B", "SHARED-SESSION", "B 客户摘要", 5);
+
+        assertThat(memoryService.find("CUSTOMER-A", "SHARED-SESSION").orElseThrow().getSummary())
+                .isEqualTo("A 客户摘要");
+        assertThat(memoryService.find("CUSTOMER-B", "SHARED-SESSION").orElseThrow().getSummary())
+                .isEqualTo("B 客户摘要");
+    }
 }

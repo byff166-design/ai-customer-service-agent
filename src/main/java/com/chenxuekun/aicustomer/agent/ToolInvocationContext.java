@@ -15,7 +15,11 @@ public class ToolInvocationContext {
     }
 
     public void begin(String sessionId, String mode) {
-        state.set(new State(sessionId, mode, new ArrayList<>()));
+        begin(sessionId, mode, sessionId);
+    }
+
+    public void begin(String sessionId, String mode, String customerId) {
+        state.set(new State(sessionId, mode, customerId, new ArrayList<>()));
         failed.set(false);
     }
 
@@ -29,6 +33,16 @@ public class ToolInvocationContext {
     public String sessionId() {
         State current = state.get();
         return current == null ? "unknown" : current.sessionId();
+    }
+
+    public String customerId() {
+        State current = state.get();
+        return current == null ? "unknown" : current.customerId();
+    }
+
+    public String conversationKey() {
+        State current = state.get();
+        return current == null ? "unknown|unknown" : current.customerId() + "|" + current.sessionId();
     }
 
     public List<String> toolNames() {
@@ -54,6 +68,6 @@ public class ToolInvocationContext {
         failed.remove();
     }
 
-    private record State(String sessionId, String mode, List<String> toolNames) {
+    private record State(String sessionId, String mode, String customerId, List<String> toolNames) {
     }
 }

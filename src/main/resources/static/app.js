@@ -3,8 +3,11 @@ const form = document.getElementById('chatForm');
 const input = document.getElementById('messageInput');
 const sendButton = document.getElementById('sendButton');
 const sessionStorageKey = 'ai-customer-service-session-id';
+const customerStorageKey = 'ai-customer-service-customer-id';
 const sessionId = localStorage.getItem(sessionStorageKey) || `WEB-${crypto.randomUUID()}`;
+const customerId = localStorage.getItem(customerStorageKey) || `CUSTOMER-${crypto.randomUUID()}`;
 localStorage.setItem(sessionStorageKey, sessionId);
+localStorage.setItem(customerStorageKey, customerId);
 
 document.getElementById('quickActions').addEventListener('click', event => {
     if (event.target.tagName === 'BUTTON') {
@@ -27,7 +30,7 @@ form.addEventListener('submit', async event => {
         const response = await fetch('/api/v1/chat', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({sessionId, message})
+            body: JSON.stringify({sessionId, customerId, message})
         });
         const body = await response.json();
         if (!response.ok) {

@@ -11,6 +11,7 @@ public class ToolCallLog {
     @TableId(type = IdType.AUTO)
     private Long id;
     private String traceId;
+    private String customerId;
     private String sessionId;
     private String toolName;
     private String requestSummary;
@@ -23,6 +24,8 @@ public class ToolCallLog {
     public void setId(Long id) { this.id = id; }
     public String getTraceId() { return traceId; }
     public void setTraceId(String traceId) { this.traceId = traceId; }
+    public String getCustomerId() { return customerId; }
+    public void setCustomerId(String customerId) { this.customerId = customerId; }
     public String getSessionId() { return sessionId; }
     public void setSessionId(String sessionId) { this.sessionId = sessionId; }
     public String getToolName() { return toolName; }

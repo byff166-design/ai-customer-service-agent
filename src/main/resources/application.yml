@@ -36,6 +36,13 @@ springdoc:
     path: /swagger-ui.html
 
 app:
+  auth:
+    enabled: false
+    customer-api-keys: {}
+  rate-limit:
+    max-requests-per-minute: 30
+  memory:
+    compaction-pool-size: 2
   ai:
     mode: mock
     api-key: ${DASHSCOPE_API_KEY:}

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.chenxuekun.aicustomer.entity.ToolCallLog;
 import com.chenxuekun.aicustomer.mapper.ToolCallLogMapper;
 import com.chenxuekun.aicustomer.observability.TraceContext;
+import com.chenxuekun.aicustomer.agent.ToolInvocationContext;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -13,10 +14,13 @@ import java.util.List;
 public class ToolCallLogService {
     private final ToolCallLogMapper logMapper;
     private final TraceContext traceContext;
+    private final ToolInvocationContext invocationContext;
 
-    public ToolCallLogService(ToolCallLogMapper logMapper, TraceContext traceContext) {
+    public ToolCallLogService(ToolCallLogMapper logMapper, TraceContext traceContext,
+                              ToolInvocationContext invocationContext) {
         this.logMapper = logMapper;
         this.traceContext = traceContext;
+        this.invocationContext = invocationContext;
     }
 
     public void record(String sessionId, String toolName, String request, String result, boolean success) {
@@ -31,6 +35,7 @@ public class ToolCallLogService {
                        long costMs) {
         ToolCallLog log = new ToolCallLog();
         log.setTraceId(safe(traceContext.currentId(), 64));
+        log.setCustomerId(safe(invocationContext.customerId(), 64));
         log.setSessionId(safe(sessionId, 64));
         log.setToolName(safe(toolName, 64));
         log.setRequestSummary(safe(request, 500));
@@ -51,6 +56,14 @@ public class ToolCallLogService {
         int safeLimit = Math.max(1, Math.min(limit, 50));
         return logMapper.selectList(Wrappers.<ToolCallLog>lambdaQuery()
                 .eq(ToolCallLog::getSessionId, safe(sessionId, 64))
+                .orderByDesc(ToolCallLog::getCreatedAt)
+                .last("LIMIT " + safeLimit));
+    }
+
+    public List<ToolCallLog> listRecentByCustomer(String customerId, int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 50));
+        return logMapper.selectList(Wrappers.<ToolCallLog>lambdaQuery()
+                .eq(ToolCallLog::getCustomerId, safe(customerId, 64))
                 .orderByDesc(ToolCallLog::getCreatedAt)
                 .last("LIMIT " + safeLimit));
     }

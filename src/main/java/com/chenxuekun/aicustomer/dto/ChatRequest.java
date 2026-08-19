@@ -10,6 +10,12 @@ public record ChatRequest(
 
         @NotBlank(message = "message 不能为空")
         @Size(max = 1000, message = "message 不能超过1000个字符")
-        String message
+        String message,
+
+        @Size(max = 64, message = "customerId 不能超过64个字符")
+        String customerId
 ) {
+    public ChatRequest(String sessionId, String message) {
+        this(sessionId, message, null);
+    }
 }

@@ -4,6 +4,7 @@ import com.chenxuekun.aicustomer.agent.AiCustomerAssistant;
 import com.chenxuekun.aicustomer.agent.CustomerServiceAgent;
 import com.chenxuekun.aicustomer.agent.LangChainCustomerServiceAgent;
 import com.chenxuekun.aicustomer.agent.tool.CustomerServiceTools;
+import com.chenxuekun.aicustomer.agent.ToolInvocationContext;
 import com.chenxuekun.aicustomer.memory.ConversationSummarizer;
 import com.chenxuekun.aicustomer.memory.LlmConversationSummarizer;
 import com.chenxuekun.aicustomer.memory.PersistentChatMemoryProvider;
@@ -17,8 +18,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.time.Duration;
+import java.util.concurrent.Executor;
 
 @Configuration
 @EnableConfigurationProperties(AiProperties.class)
@@ -49,8 +52,9 @@ public class AiAgentConfiguration {
     @Bean
     @ConditionalOnProperty(name = "app.ai.mode", havingValue = "ai")
     ChatMemoryProvider chatMemoryProvider(ConversationMemoryService memoryService,
-                                          ConversationSummarizer summarizer) {
-        return new PersistentChatMemoryProvider(memoryService, summarizer);
+                                          ConversationSummarizer summarizer,
+                                          @Qualifier("compactionExecutor") Executor compactionExecutor) {
+        return new PersistentChatMemoryProvider(memoryService, summarizer, compactionExecutor);
     }
 
     @Bean
@@ -68,7 +72,8 @@ public class AiAgentConfiguration {
     @Bean
     @ConditionalOnProperty(name = "app.ai.mode", havingValue = "ai")
     CustomerServiceAgent langChainCustomerServiceAgent(AiCustomerAssistant assistant,
-                                                        SessionContextService sessionContextService) {
-        return new LangChainCustomerServiceAgent(assistant, sessionContextService);
+                                                        SessionContextService sessionContextService,
+                                                        ToolInvocationContext invocationContext) {
+        return new LangChainCustomerServiceAgent(assistant, sessionContextService, invocationContext);
     }
 }

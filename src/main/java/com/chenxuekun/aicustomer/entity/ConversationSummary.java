@@ -1,19 +1,25 @@
 package com.chenxuekun.aicustomer.entity;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.time.LocalDateTime;
 
-@TableName("conversation_summary")
+@TableName("conversation_memory")
 public class ConversationSummary {
-    @TableId(type = IdType.INPUT)
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    private String customerId;
     private String sessionId;
     private String summary;
     private Long summarizedMessageCount;
     private LocalDateTime updatedAt;
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getCustomerId() { return customerId; }
+    public void setCustomerId(String customerId) { this.customerId = customerId; }
     public String getSessionId() { return sessionId; }
     public void setSessionId(String sessionId) { this.sessionId = sessionId; }
     public String getSummary() { return summary; }

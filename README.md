@@ -10,9 +10,10 @@
 - **双运行模式**：默认 `mock` 模式无需 API Key；`ai` 模式连接阿里云百炼通义千问。
 - **业务闭环**：覆盖订单查询、物流跟踪、售后政策、创建工单、工单查询和转人工。
 - **全链路可观测性**：请求返回 TraceId，控制台输出 JSON 日志，工具审计记录 TraceId、耗时和成功状态。
-- **分层会话记忆**：AI 模式对长对话进行摘要压缩并持久化到 H2，同时注入同一会话的近期行为画像。
+- **分层会话记忆**：AI 模式对长对话进行异步摘要压缩，按 `customerId + sessionId` 隔离并持久化到 H2。
+- **P1 请求保护**：支持客户 API Key 可选鉴权、客户级单机限流、输入清洗与提示词注入拦截。
 - **可靠性设计**：缺少订单号时追问，禁止无依据回答，工具失败时降级转人工。
-- **工程质量**：统一异常、参数校验、H2 文件数据库、Swagger、40 项自动测试和 GitHub Actions。
+- **工程质量**：统一错误码、参数校验、H2 文件数据库、Swagger、52 项自动测试和 GitHub Actions。
 
 ## 架构
 
@@ -95,6 +96,16 @@ $env:SPRING_PROFILES_ACTIVE="ai"
 
 可通过 `AI_MODEL_NAME` 修改模型，默认使用 `qwen-plus`。
 
+### 4. 可选开启客户 API Key 鉴权
+
+鉴权默认关闭，且只在 `ai` 模式开启后强制执行。不要把客户密钥写进仓库，可在 PowerShell 中用环境 JSON 注入：
+
+```powershell
+$env:SPRING_APPLICATION_JSON='{"app":{"auth":{"enabled":true,"customer-api-keys":{"customer-demo":"replace-with-a-strong-key"}}}}'
+```
+
+请求时同时传递 `X-Customer-Id: customer-demo` 和 `X-Api-Key`。本机 mock 演示不需要配置这两项。
+
 ## 演示问题
 
 项目自带模拟订单：`ORD1001`、`ORD1002`、`ORD1003`、`ORD1004`。
@@ -112,7 +123,8 @@ $env:SPRING_PROFILES_ACTIVE="ai"
 ```bash
 curl -X POST http://localhost:8080/api/v1/chat \
   -H "Content-Type: application/json" \
-  -d '{"sessionId":"demo-001","message":"查询 ORD1001 的物流"}'
+  -H "X-Customer-Id: customer-demo" \
+  -d '{"sessionId":"demo-001","customerId":"customer-demo","message":"查询 ORD1001 的物流"}'
 ```
 
 响应：
@@ -151,7 +163,7 @@ curl -X POST http://localhost:8080/api/v1/chat \
 ./mvnw test
 ```
 
-当前包含 **40 项自动测试**，并附带 30 条固定客服评测样例，覆盖：
+当前包含 **52 项自动测试**，并附带 30 条固定客服评测样例，覆盖：
 
 - 正常、边界和异常接口
 - 订单号缺失与不存在
@@ -162,6 +174,8 @@ curl -X POST http://localhost:8080/api/v1/chat \
 - 无关请求及提示词/密钥探测
 - TraceId 并发唯一性与 HTTP 回传
 - 会话摘要压缩与 H2 持久化恢复
+- `customerId + sessionId` 记忆隔离与异步摘要
+- AI 模式鉴权、429 限流和稳定错误码
 
 ## 项目结构
 
@@ -185,12 +199,12 @@ src/main/java/com/chenxuekun/aicustomer
 - API Key 只从环境变量读取。
 - `.env`、本地数据库、日志和构建目录均被 `.gitignore` 排除。
 - 工具日志会截断并清理换行，避免把超长输入原样写入数据库。
-- 当前“画像”以 `sessionId` 为边界，不等同于经过认证的真实用户身份。
+- 对话数据以 `customerId + sessionId` 为边界；演示用 API Key 鉴权不等同于完整的 OAuth2/JWT 登录体系。
 - 该项目用于学习和求职展示，不应未经安全加固直接用于生产环境。
 
 ## 设计取舍
 
-项目有意不引入 RAG、Redis、RabbitMQ、Docker、微服务和多 Agent。当前 P0 目标是把 Function Calling、业务工具、异常兜底、工单闭环、链路追踪和会话记忆做完整，而不是堆砌中间件。真正多实例部署时，应把 H2 和本地会话缓存替换为共享存储，并使用认证后的 `customerId` 建立长期用户画像。
+项目有意不引入 RAG、Redis、RabbitMQ、Docker、微服务和多 Agent。P1 仍定位为“单机生产化演示版”：完成身份边界、请求保护与异步记忆，但不声称已支持多实例。真正多实例部署时，应将 H2、本地会话缓存和限流计数迁移至 PostgreSQL/Redis，并接入正式身份系统。
 
 ## 开源致谢
 

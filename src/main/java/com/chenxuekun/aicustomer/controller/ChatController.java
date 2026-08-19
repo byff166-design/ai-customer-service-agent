@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -21,7 +22,9 @@ public class ChatController {
 
     @Operation(summary = "与智能客服对话", description = "mock 模式可离线演示，ai 模式由通义千问选择并调用业务工具。")
     @PostMapping
-    public ChatResponse chat(@Valid @RequestBody ChatRequest request) {
-        return chatService.chat(request);
+    public ChatResponse chat(@Valid @RequestBody ChatRequest request,
+                             @RequestHeader(value = "X-Customer-Id", required = false) String customerIdHeader,
+                             @RequestHeader(value = "X-Api-Key", required = false) String apiKey) {
+        return chatService.chat(request, customerIdHeader, apiKey);
     }
 }
