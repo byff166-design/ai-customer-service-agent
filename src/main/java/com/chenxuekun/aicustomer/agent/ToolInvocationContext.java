@@ -11,7 +11,11 @@ public class ToolInvocationContext {
     private final ThreadLocal<Boolean> failed = new ThreadLocal<>();
 
     public void begin(String sessionId) {
-        state.set(new State(sessionId, new ArrayList<>()));
+        begin(sessionId, "");
+    }
+
+    public void begin(String sessionId, String mode) {
+        state.set(new State(sessionId, mode, new ArrayList<>()));
         failed.set(false);
     }
 
@@ -32,6 +36,11 @@ public class ToolInvocationContext {
         return current == null ? List.of() : List.copyOf(current.toolNames());
     }
 
+    public String mode() {
+        State current = state.get();
+        return current == null ? "" : current.mode();
+    }
+
     public void markFailed() {
         failed.set(true);
     }
@@ -45,6 +54,6 @@ public class ToolInvocationContext {
         failed.remove();
     }
 
-    private record State(String sessionId, List<String> toolNames) {
+    private record State(String sessionId, String mode, List<String> toolNames) {
     }
 }

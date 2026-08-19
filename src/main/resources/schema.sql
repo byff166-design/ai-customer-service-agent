@@ -29,13 +29,26 @@ CREATE TABLE IF NOT EXISTS support_ticket (
 
 CREATE TABLE IF NOT EXISTS tool_call_log (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    trace_id VARCHAR(64),
     session_id VARCHAR(64) NOT NULL,
     tool_name VARCHAR(64) NOT NULL,
     request_summary VARCHAR(500),
     result_summary VARCHAR(1000),
     success BOOLEAN NOT NULL,
+    cost_ms BIGINT NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL
+);
+
+ALTER TABLE tool_call_log ADD COLUMN IF NOT EXISTS trace_id VARCHAR(64);
+ALTER TABLE tool_call_log ADD COLUMN IF NOT EXISTS cost_ms BIGINT NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS conversation_summary (
+    session_id VARCHAR(64) PRIMARY KEY,
+    summary VARCHAR(4000) NOT NULL,
+    summarized_message_count BIGINT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_ticket_order_no ON support_ticket(order_no);
 CREATE INDEX IF NOT EXISTS idx_tool_log_session ON tool_call_log(session_id);
+CREATE INDEX IF NOT EXISTS idx_tool_log_trace ON tool_call_log(trace_id);

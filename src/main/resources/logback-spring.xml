@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <timeZone>Asia/Shanghai</timeZone>
+                </timestamp>
+                <logLevel>
+                    <fieldName>level</fieldName>
+                </logLevel>
+                <loggerName>
+                    <fieldName>logger</fieldName>
+                </loggerName>
+                <threadName>
+                    <fieldName>thread</fieldName>
+                </threadName>
+                <pattern>
+                    <pattern>
+                        {
+                          "traceId": "%X{traceId:-}",
+                          "sessionId": "%X{sessionId:-}",
+                          "mode": "%X{mode:-}",
+                          "event": "%X{event:-system}",
+                          "costMs": "#asLong{%X{costMs:-0}}"
+                        }
+                    </pattern>
+                </pattern>
+                <mdc>
+                    <excludeMdcKeyName>traceId</excludeMdcKeyName>
+                    <excludeMdcKeyName>sessionId</excludeMdcKeyName>
+                    <excludeMdcKeyName>mode</excludeMdcKeyName>
+                    <excludeMdcKeyName>event</excludeMdcKeyName>
+                    <excludeMdcKeyName>costMs</excludeMdcKeyName>
+                </mdc>
+                <message/>
+                <stackTrace/>
+            </providers>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

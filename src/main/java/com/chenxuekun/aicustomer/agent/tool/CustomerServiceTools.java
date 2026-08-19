@@ -9,11 +9,14 @@ import com.chenxuekun.aicustomer.service.LogisticsService;
 import com.chenxuekun.aicustomer.service.OrderService;
 import com.chenxuekun.aicustomer.service.TicketService;
 import com.chenxuekun.aicustomer.service.ToolCallLogService;
+import com.chenxuekun.aicustomer.observability.StructuredEventLogger;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import org.springframework.stereotype.Component;
 
 import java.util.function.Supplier;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class CustomerServiceTools {
@@ -23,19 +26,22 @@ public class CustomerServiceTools {
     private final FaqService faqService;
     private final ToolCallLogService logService;
     private final ToolInvocationContext context;
+    private final StructuredEventLogger eventLogger;
 
     public CustomerServiceTools(OrderService orderService,
                                 LogisticsService logisticsService,
                                 TicketService ticketService,
                                 FaqService faqService,
                                 ToolCallLogService logService,
-                                ToolInvocationContext context) {
+                                ToolInvocationContext context,
+                                StructuredEventLogger eventLogger) {
         this.orderService = orderService;
         this.logisticsService = logisticsService;
         this.ticketService = ticketService;
         this.faqService = faqService;
         this.logService = logService;
         this.context = context;
+        this.eventLogger = eventLogger;
     }
 
     @Tool("根据订单号查询订单详情。用户未提供订单号时不要调用。")
@@ -90,15 +96,37 @@ public class CustomerServiceTools {
 
     private String execute(String toolName, String request, Supplier<String> action) {
         context.record(toolName);
+        long startedAt = System.nanoTime();
         try {
             String result = action.get();
-            logService.record(context.sessionId(), toolName, request, result, true);
+            long costMs = elapsedMillis(startedAt);
+            logService.record(context.sessionId(), toolName, request, result, true, costMs);
+            eventLogger.info("toolCall", context.sessionId(), context.mode(), costMs,
+                    "业务工具调用成功",
+                    Map.of("toolName", toolName, "success", true, "requestSummary", safe(request)));
             return result;
         } catch (RuntimeException exception) {
             context.markFailed();
             String result = "工具执行失败：" + exception.getMessage();
-            logService.record(context.sessionId(), toolName, request, result, false);
+            long costMs = elapsedMillis(startedAt);
+            logService.record(context.sessionId(), toolName, request, result, false, costMs);
+            eventLogger.warn("toolCall", context.sessionId(), context.mode(), costMs,
+                    "业务工具调用失败",
+                    Map.of("toolName", toolName, "success", false, "requestSummary", safe(request)),
+                    null);
             return result;
         }
+    }
+
+    private long elapsedMillis(long startedAt) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt);
+    }
+
+    private String safe(String value) {
+        if (value == null) {
+            return "";
+        }
+        String singleLine = value.replaceAll("[\\r\\n]+", " ").trim();
+        return singleLine.length() <= 160 ? singleLine : singleLine.substring(0, 160);
     }
 }

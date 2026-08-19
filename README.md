@@ -9,9 +9,10 @@
 - **真实 Tool Calling**：通过 LangChain4j AI Services 和 `@Tool` 封装 6 个业务工具。
 - **双运行模式**：默认 `mock` 模式无需 API Key；`ai` 模式连接阿里云百炼通义千问。
 - **业务闭环**：覆盖订单查询、物流跟踪、售后政策、创建工单、工单查询和转人工。
-- **可观测性**：每次工具调用都记录参数摘要、执行结果、成功状态和会话 ID。
+- **全链路可观测性**：请求返回 TraceId，控制台输出 JSON 日志，工具审计记录 TraceId、耗时和成功状态。
+- **分层会话记忆**：AI 模式对长对话进行摘要压缩并持久化到 H2，同时注入同一会话的近期行为画像。
 - **可靠性设计**：缺少订单号时追问，禁止无依据回答，工具失败时降级转人工。
-- **工程质量**：统一异常、参数校验、H2 文件数据库、Swagger、33 项自动测试和 GitHub Actions。
+- **工程质量**：统一异常、参数校验、H2 文件数据库、Swagger、40 项自动测试和 GitHub Actions。
 
 ## 架构
 
@@ -19,6 +20,7 @@
 flowchart LR
     U[用户 / Web 页面] --> C[ChatController]
     C --> S[ChatService]
+    C --> X[TraceFilter / MDC]
     S --> A{运行模式}
     A -->|mock| R[RuleBased Agent]
     A -->|ai| L[LangChain4j AI Service]
@@ -33,6 +35,8 @@ flowchart LR
     K --> H
     T --> D[工具调用审计]
     D --> H
+    L --> M[摘要压缩 / Session 画像]
+    M --> H
 ```
 
 详细设计见 [docs/architecture.md](docs/architecture.md)。
@@ -47,6 +51,7 @@ flowchart LR
 | 接口 | RESTful API、Springdoc OpenAPI |
 | 测试 | JUnit 5、Mockito、MockMvc、Spring Boot Test |
 | 工程 | Maven Wrapper、GitHub Actions |
+| 可观测性 | SLF4J MDC、Logback JSON、TraceId、工具审计 |
 
 ## 快速启动
 
@@ -118,9 +123,14 @@ curl -X POST http://localhost:8080/api/v1/chat \
   "answer": "物流公司=顺丰速运，运单号=SF202608120001，最新状态=运输中，已到达深圳转运中心",
   "toolCalls": ["getLogistics"],
   "transferredToHuman": false,
-  "mode": "mock"
+  "mode": "mock",
+  "traceId": "20260819135612A3F9C812D401"
 }
 ```
+
+响应头也会返回 `X-Trace-Id`。可以用该值关联 API 响应、JSON 控制台日志和
+`tool_call_log` 审计记录。业务日志事件包括 `agentRequest`、`llmCall`、`toolCall`、
+`agentFallback` 和 `agentResponse`。
 
 完整请求集合见 [postman/AI-Customer-Service-Agent.postman_collection.json](postman/AI-Customer-Service-Agent.postman_collection.json)。
 
@@ -141,7 +151,7 @@ curl -X POST http://localhost:8080/api/v1/chat \
 ./mvnw test
 ```
 
-当前包含 **33 项自动测试**，并附带 30 条固定客服评测样例，覆盖：
+当前包含 **40 项自动测试**，并附带 30 条固定客服评测样例，覆盖：
 
 - 正常、边界和异常接口
 - 订单号缺失与不存在
@@ -150,6 +160,8 @@ curl -X POST http://localhost:8080/api/v1/chat \
 - 重复工单拦截
 - 人工转接
 - 无关请求及提示词/密钥探测
+- TraceId 并发唯一性与 HTTP 回传
+- 会话摘要压缩与 H2 持久化恢复
 
 ## 项目结构
 
@@ -162,6 +174,8 @@ src/main/java/com/chenxuekun/aicustomer
 ├── entity      # 数据实体
 ├── exception   # 业务异常和统一处理
 ├── mapper      # MyBatis-Plus Mapper
+├── memory      # AI 会话摘要压缩与记忆提供器
+├── observability # TraceId、MDC 与结构化事件日志
 └── service     # 订单、物流、FAQ、工单及聊天编排
 ```
 
@@ -171,11 +185,12 @@ src/main/java/com/chenxuekun/aicustomer
 - API Key 只从环境变量读取。
 - `.env`、本地数据库、日志和构建目录均被 `.gitignore` 排除。
 - 工具日志会截断并清理换行，避免把超长输入原样写入数据库。
+- 当前“画像”以 `sessionId` 为边界，不等同于经过认证的真实用户身份。
 - 该项目用于学习和求职展示，不应未经安全加固直接用于生产环境。
 
 ## 设计取舍
 
-MVP 有意不引入 RAG、Redis、RabbitMQ、Docker、微服务和多 Agent。核心目标是把 Function Calling、业务工具、异常兜底、工单闭环和自动测试做完整，而不是堆砌中间件。
+项目有意不引入 RAG、Redis、RabbitMQ、Docker、微服务和多 Agent。当前 P0 目标是把 Function Calling、业务工具、异常兜底、工单闭环、链路追踪和会话记忆做完整，而不是堆砌中间件。真正多实例部署时，应把 H2 和本地会话缓存替换为共享存储，并使用认证后的 `customerId` 建立长期用户画像。
 
 ## 开源致谢
 

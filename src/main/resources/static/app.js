@@ -2,7 +2,9 @@ const messages = document.getElementById('messages');
 const form = document.getElementById('chatForm');
 const input = document.getElementById('messageInput');
 const sendButton = document.getElementById('sendButton');
-const sessionId = `WEB-${crypto.randomUUID()}`;
+const sessionStorageKey = 'ai-customer-service-session-id';
+const sessionId = localStorage.getItem(sessionStorageKey) || `WEB-${crypto.randomUUID()}`;
+localStorage.setItem(sessionStorageKey, sessionId);
 
 document.getElementById('quickActions').addEventListener('click', event => {
     if (event.target.tagName === 'BUTTON') {
@@ -31,7 +33,7 @@ form.addEventListener('submit', async event => {
         if (!response.ok) {
             throw new Error(body.message || '请求失败');
         }
-        appendMessage(body.answer, 'agent', body.toolCalls, body.mode);
+        appendMessage(body.answer, 'agent', body.toolCalls, body.mode, body.traceId);
     } catch (error) {
         appendMessage(`请求失败：${error.message}`, 'agent');
     } finally {
@@ -41,7 +43,7 @@ form.addEventListener('submit', async event => {
     }
 });
 
-function appendMessage(text, role, tools = [], mode = '') {
+function appendMessage(text, role, tools = [], mode = '', traceId = '') {
     const article = document.createElement('article');
     article.className = `message ${role}`;
 
@@ -51,7 +53,7 @@ function appendMessage(text, role, tools = [], mode = '') {
     bubble.textContent = text;
     wrapper.appendChild(bubble);
 
-    if (tools.length > 0 || mode) {
+    if (tools.length > 0 || mode || traceId) {
         const meta = document.createElement('div');
         meta.className = 'tool-list';
         if (mode) meta.append(`模式：${mode} `);
@@ -60,6 +62,12 @@ function appendMessage(text, role, tools = [], mode = '') {
             tag.textContent = tool;
             meta.appendChild(tag);
         });
+        if (traceId) {
+            const trace = document.createElement('span');
+            trace.textContent = `Trace ${traceId}`;
+            trace.title = '用于在日志和审计记录中定位本次请求';
+            meta.appendChild(trace);
+        }
         wrapper.appendChild(meta);
     }
 

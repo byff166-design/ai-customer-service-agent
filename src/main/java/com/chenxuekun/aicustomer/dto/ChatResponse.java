@@ -9,6 +9,15 @@ public record ChatResponse(
         List<String> toolCalls,
         boolean transferredToHuman,
         String mode,
-        LocalDateTime answeredAt
+        LocalDateTime answeredAt,
+        String traceId
 ) {
+    public ChatResponse(String sessionId,
+                        String answer,
+                        List<String> toolCalls,
+                        boolean transferredToHuman,
+                        String mode,
+                        LocalDateTime answeredAt) {
+        this(sessionId, answer, toolCalls, transferredToHuman, mode, answeredAt, null);
+    }
 }
