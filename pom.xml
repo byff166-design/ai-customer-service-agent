@@ -21,7 +21,7 @@
         <java.version>17</java.version>
         <langchain4j.version>1.18.1</langchain4j.version>
         <mybatis-plus.version>3.5.17</mybatis-plus.version>
-        <springdoc.version>2.9.0</springdoc.version>
+        <springdoc.version>2.9.1</springdoc.version>
         <logstash-logback-encoder.version>8.1</logstash-logback-encoder.version>
     </properties>
 
